@@ -69,10 +69,43 @@ class LanguageMiddleware:
         await self.app(scope, receive, send)
 
 
+SESSION_COOKIE = "cr_session"
+
+
+class SecureCookieMiddleware:
+    """Mode CR_COOKIE_SECURE=auto : ajoute « Secure » au cookie de session uniquement pour les requêtes HTTPS.
+
+    Ainsi l'installation fonctionne en http://IP:8000 (avant la mise en place du HTTPS), et le cookie
+    est protégé dès que l'accès passe par le reverse proxy HTTPS (uvicorn --proxy-headers).
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http" or scope.get("scheme") != "https":
+            return await self.app(scope, receive, send)
+
+        async def send_secure(message):
+            if message["type"] == "http.response.start":
+                headers = []
+                for name, value in message.get("headers", []):
+                    if (name.lower() == b"set-cookie" and value.startswith(SESSION_COOKIE.encode() + b"=")
+                            and b"secure" not in value.lower()):
+                        value += b"; secure"
+                    headers.append((name, value))
+                message = {**message, "headers": headers}
+            await send(message)
+
+        await self.app(scope, receive, send_secure)
+
+
 app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 app.add_middleware(LanguageMiddleware)
-app.add_middleware(SessionMiddleware, secret_key=config.SECRET_KEY, session_cookie="cr_session",
-                   max_age=90 * 24 * 3600, same_site="lax", https_only=config.COOKIE_SECURE)
+app.add_middleware(SessionMiddleware, secret_key=config.SECRET_KEY, session_cookie=SESSION_COOKIE,
+                   max_age=90 * 24 * 3600, same_site="lax", https_only=config.COOKIE_SECURE == "1")
+if config.COOKIE_SECURE == "auto":
+    app.add_middleware(SecureCookieMiddleware)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 templates = Jinja2Templates(directory=config.BASE_DIR / "templates")
@@ -133,9 +166,19 @@ def csrf_token(request: Request) -> str:
     return request.session["csrf"]
 
 
+# Textes marqués avec _() pour l'extraction ; traduits au moment de l'erreur par _(MSG_...).
+MSG_HTTPS_ONLY = _("Le site est configuré pour fonctionner uniquement en HTTPS (CR_COOKIE_SECURE=1) mais cette page est ouverte en http://. Ouvrez-la en https:// ou mettez CR_COOKIE_SECURE=auto.")
+MSG_NO_COOKIE = _("Le navigateur n'a pas conservé le cookie de session. Vérifiez que les cookies sont autorisés pour ce site, puis rechargez la page.")
+
+
 async def check_csrf(request: Request, csrf: str = Form("")):
     expected = request.session.get("csrf", "")
-    if not expected or not secrets.compare_digest(csrf, expected):
+    if not expected:
+        # Aucun cookie de session reçu : cookies bloqués, ou cookie « Secure » sur une page en http://
+        if config.COOKIE_SECURE == "1" and request.url.scheme != "https":
+            raise HTTPException(400, _(MSG_HTTPS_ONLY))
+        raise HTTPException(400, _(MSG_NO_COOKIE))
+    if not secrets.compare_digest(csrf, expected):
         raise HTTPException(400, _("Le formulaire a expiré, recharge la page et réessaie."))
 
 

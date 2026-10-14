@@ -9,8 +9,12 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 DATABASE_URL = os.environ.get("CR_DATABASE_URL", f"sqlite:///{DATA_DIR / 'childs_rewards.db'}")
 TIMEZONE = os.environ.get("CR_TIMEZONE", "Europe/Paris")
-# À mettre à 1 en production (derrière NGINX en HTTPS) : cookie envoyé uniquement en HTTPS.
-COOKIE_SECURE = os.environ.get("CR_COOKIE_SECURE", "0") == "1"
+# Attribut « Secure » du cookie de session :
+#   auto (défaut) = seulement quand la page est servie en HTTPS (directement ou via le reverse proxy),
+#   1 = toujours (le site ne marche alors qu'en HTTPS), 0 = jamais.
+COOKIE_SECURE = os.environ.get("CR_COOKIE_SECURE", "auto").strip().lower()
+if COOKIE_SECURE not in ("auto", "1", "0"):
+    COOKIE_SECURE = "auto"
 
 
 def _secret_key() -> str:

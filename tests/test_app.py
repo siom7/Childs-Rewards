@@ -263,3 +263,20 @@ def test_week_summary_matches_paper_formula(setup_done):
         running += r["earned"] - r["removed"] + r["bonus"] - r["used"]
         if r["total"] is not None:
             assert r["total"] == running
+
+
+def test_session_cookie_secure_only_over_https(setup_done):
+    """CR_COOKIE_SECURE=auto : la connexion marche en http:// (installation sur IP:8000) et le cookie
+    devient « Secure » dès que la page est servie en HTTPS (reverse proxy)."""
+    with TestClient(app) as c:
+        cookie = c.get("/login").headers["set-cookie"]
+        assert cookie.startswith("cr_session=") and "secure" not in cookie.lower()
+    with TestClient(app, base_url="https://testserver") as c:
+        assert "secure" in c.get("/login").headers["set-cookie"].lower()
+        assert login(c, "papa", "motdepasse1").headers["location"] == "/"
+
+
+def test_missing_session_cookie_has_clear_message(setup_done):
+    with TestClient(app) as c:
+        r = c.post("/login", data={"username": "papa", "password": "x", "csrf": "abc"})
+        assert r.status_code == 400 and "cookie de session" in r.text

@@ -5,7 +5,7 @@ services:
     ports:
       - "127.0.0.1:8000:8000"   # exposé seulement en local : mettre un reverse proxy HTTPS devant
     environment:
-      CR_COOKIE_SECURE: "1"     # mettre "0" pour tester en http://localhost
+      CR_COOKIE_SECURE: auto    # cookie « Secure » automatiquement quand l'accès est en HTTPS
       CR_TIMEZONE: Europe/Paris
     volumes:
       - ./data:/data

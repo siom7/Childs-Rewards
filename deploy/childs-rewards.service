@@ -7,8 +7,8 @@ User=childs-rewards
 Group=childs-rewards
 WorkingDirectory=/opt/childs-rewards
 Environment=CR_DATA_DIR=/var/lib/childs-rewards
-# Cookie de session envoyé uniquement en HTTPS (l'application est derrière un reverse proxy HTTPS)
-Environment=CR_COOKIE_SECURE=1
+# Cookie de session « Secure » automatiquement dès que l'accès se fait en HTTPS (via le reverse proxy)
+Environment=CR_COOKIE_SECURE=auto
 Environment=CR_TIMEZONE=Europe/Paris
 # --proxy-headers : récupère la vraie IP du visiteur (limitation des tentatives de connexion).
 # Si le reverse proxy est sur une autre machine, remplacer 127.0.0.1 par son adresse IP.

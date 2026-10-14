@@ -111,7 +111,7 @@ docker compose up -d --build
 ```
 
 L'application écoute sur `127.0.0.1:8000`, les données sont dans `./data`.
-Pour un essai sans HTTPS, mettre `CR_COOKIE_SECURE: "0"` dans `docker-compose.yml`.
+Un premier essai en simple `http://` fonctionne ; le cookie de session devient automatiquement `Secure` dès que l'accès passe en HTTPS.
 
 ### Rendre l'application accessible en HTTPS
 
@@ -133,7 +133,6 @@ sudo nginx -t && sudo systemctl reload nginx
 cocher « Block Common Exploits », puis dans l'onglet SSL demander un certificat Let's Encrypt et cocher « Force SSL ».
 
 > 💡 Sans exposer l'application sur Internet, un VPN (Tailscale, WireGuard) fonctionne aussi très bien.
-> Dans ce cas, sans HTTPS, mettre `CR_COOKIE_SECURE=0`.
 
 ### Essayer sur son ordinateur
 
@@ -208,7 +207,7 @@ Variables d'environnement (dans le service systemd ou `docker-compose.yml`) :
 |---|---|---|
 | `CR_DATA_DIR` | `./data` | Dossier de la base SQLite et de la clé secrète |
 | `CR_SECRET_KEY` | générée dans `data/secret_key` | Signature des cookies de session |
-| `CR_COOKIE_SECURE` | `0` | `1` = cookie envoyé uniquement en HTTPS (à activer en production) |
+| `CR_COOKIE_SECURE` | `auto` | `auto` = cookie `Secure` quand la page est servie en HTTPS (directement ou via le reverse proxy) ; `1` = toujours (le site ne marche alors qu'en HTTPS) ; `0` = jamais |
 | `CR_TIMEZONE` | `Europe/Paris` | Fuseau horaire utilisé pour « aujourd'hui » |
 
 ## Développement
