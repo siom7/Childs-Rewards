@@ -1,0 +1,7 @@
+* text=auto eol=lf
+*.png binary
+
+# Fichiers privés : jamais exportés vers le dépôt public (git archive / tools/publish_public.sh)
+CLAUDE_SESSION.md export-ignore
+.claude/** export-ignore
+tools/publish_public.sh export-ignore

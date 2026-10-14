@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Semaine') }} · {% endblock %}
+{% block content %}
+<nav class="daynav glass">
+  <a class="btn btn-sm" href="/semaine?d={{ prev_week.isoformat() }}">‹</a>
+  <div class="title">{{ _('Semaine du {start} au {end}').format(start=start.strftime('%d/%m'), end=end.strftime('%d/%m')) }}</div>
+  {% if next_week %}<a class="btn btn-sm" href="/semaine?d={{ next_week.isoformat() }}">›</a>
+  {% else %}<span class="btn btn-sm" style="visibility:hidden">›</span>{% endif %}
+</nav>
+
+{% for s in summaries %}
+<section class="glass card" style="--kid: {{ s.child.color }}">
+  <div class="row between">
+    <div class="row">
+      <div class="avatar">{{ s.child.name[0] }}</div>
+      <h2 style="margin:0">{{ s.child.name }}</h2>
+    </div>
+    <div class="small dim">🐷 {{ _('Points conservés') }} : <strong>{{ s.opening }}</strong></div>
+  </div>
+  <table class="week mt">
+    <thead>
+      <tr><th>{{ _('Jour') }}</th><th>{{ _('Gagnés') }}</th><th>{{ _('Retirés') }}</th><th>{{ _('Bonus') }}</th><th>{{ _('Récomp.') }}</th><th>{{ _('Total') }}</th></tr>
+    </thead>
+    <tbody>
+      {% for r in s.rows %}
+      <tr class="{{ 'today' if r.day == today }} {{ 'future' if r.future }}">
+        <td>{% if r.future %}{{ r.day | weekday_short }}{% else %}<a href="/enfant/{{ s.child.id }}/jour/{{ r.day.isoformat() }}">{{ r.day | weekday_short }} {{ r.day.day }}</a>{% endif %}</td>
+        <td class="{{ 'pos' if r.earned }}">{{ r.earned if not r.future }}</td>
+        <td class="{{ 'neg' if r.removed }}">{{ r.removed if not r.future }}</td>
+        <td class="{{ 'pos' if r.bonus }}">{{ r.bonus if not r.future }}</td>
+        <td>{{ r.used if not r.future }}</td>
+        <td class="total {{ 'neg' if r.total is not none and r.total < 0 }}">{{ r.total if r.total is not none }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endfor %}
+{% endblock %}

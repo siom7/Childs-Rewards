@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Validation') }} · {% endblock %}
+{% block content %}
+<div class="row between">
+  <h1>✅ {{ _('À valider') }}</h1>
+  {% if entries %}
+  <form method="post" action="/validation/tout">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <button class="btn-primary btn-sm" data-confirm="{{ _('Tout valider ({n}) ?').format(n=entries | length) }}">{{ _('Tout valider') }}</button>
+  </form>
+  {% endif %}
+</div>
+
+{% if not entries %}
+  <div class="glass card center">
+    <p class="big">🎉</p>
+    <p class="dim">{{ _('Rien en attente.') }}</p>
+  </div>
+{% endif %}
+
+{% for group in entries | groupby('day') %}
+  <section class="glass card">
+    <h2 class="cap">{{ group.grouper | date }}</h2>
+    <ul class="log">
+      {% for e in group.list %}
+      <li style="--kid: {{ e.child.color }}">
+        <div class="avatar" style="width:32px;height:32px;font-size:.9rem">{{ e.child.name[0] }}</div>
+        <span class="grow">
+          <a href="/enfant/{{ e.child_id }}/jour/{{ e.day.isoformat() }}">{{ e.label }}</a>
+          <span class="dim small">· {{ e.child.name }}</span>
+        </span>
+        <span class="p {{ 'pos' if e.points > 0 else 'neg' }}">{{ e.points | signed }}</span>
+        <form class="inline" method="post" action="/entree/{{ e.id }}/valider">
+          <input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn-sm btn-ok" title="{{ _('Valider') }}">✓</button>
+        </form>
+        <form class="inline" method="post" action="/entree/{{ e.id }}/refuser">
+          <input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn-sm btn-bad" title="{{ _('Refuser') }}">✕</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+{% endfor %}
+{% endblock %}

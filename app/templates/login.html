@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Connexion') }} · {% endblock %}
+{% block content %}
+<div class="login">
+  <h1 class="center">⭐ {{ family or _('Points Famille') }}</h1>
+  <p class="center dim">{{ _('Plus de bons comportements = plus de sourires !') }}</p>
+
+  <div class="tabs-switch glass">
+    <button type="button" data-tab="kids" class="on">👧 👦 {{ _('Enfants') }}</button>
+    <button type="button" data-tab="parent">{{ _('Parents') }}</button>
+  </div>
+
+  <form method="post" action="/login" class="glass card" data-pane="kids">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="hidden" name="username" value="{{ kids_username }}">
+    <label for="pin">{{ _('Code secret') }}</label>
+    <input class="pin" id="pin" type="password" name="password" inputmode="numeric" pattern="[0-9]*"
+           autocomplete="current-password" maxlength="8" required>
+    <button class="btn-primary full mt">{{ _("C'est parti !") }}</button>
+  </form>
+
+  <form method="post" action="/login" class="glass card hidden" data-pane="parent">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label for="username">{{ _('Identifiant') }}</label>
+    <input id="username" type="text" name="username" autocomplete="username" autocapitalize="none" required>
+    <label for="password">{{ _('Mot de passe') }}</label>
+    <input id="password" type="password" name="password" autocomplete="current-password" required>
+    <button class="btn-primary full mt">{{ _('Se connecter') }}</button>
+  </form>
+</div>
+{% endblock %}

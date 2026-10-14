@@ -1,0 +1,10 @@
+.git
+.venv
+data
+data-demo
+docs
+tests
+tools
+__pycache__
+*.pyc
+.claude

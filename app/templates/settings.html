@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% from "_catalog.html" import catalog_editor with context %}
+{% block title %}{{ _('Réglages') }} · {% endblock %}
+{% block content %}
+<h1>⚙️ {{ _('Réglages') }}</h1>
+
+<details class="glass" id="famille" open>
+  <summary>🏡 {{ _('Famille') }}</summary>
+  <div class="inner">
+    <form method="post" action="/reglages/famille">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <div class="row wrap-row">
+        <div class="grow"><label>{{ _('Nom de la famille') }}</label>
+          <input type="text" name="family_name" value="{{ family }}" required maxlength="50"></div>
+        <div style="width:160px"><label>🌍 {{ _('Langue') }}</label>
+          <select name="language">
+            {% for code, label in languages.items() %}
+              <option value="{{ code }}" {{ 'selected' if code == get_language() }}>{{ label }}</option>
+            {% endfor %}
+          </select></div>
+      </div>
+      <button class="btn-sm mt">{{ _('Enregistrer') }}</button>
+    </form>
+  </div>
+</details>
+
+<details class="glass" id="enfants">
+  <summary>👧👦 {{ _('Enfants') }}</summary>
+  <div class="inner">
+    {% for c in children %}
+    <form method="post" action="/reglages/enfant/{{ c.id }}" class="person {{ 'inactive' if not c.active }}">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <div class="row wrap-row">
+        <div class="grow"><label>{{ _('Prénom') }}</label><input type="text" name="name" value="{{ c.name }}" required maxlength="50"></div>
+        <div style="width:64px"><label>{{ _('Couleur') }}</label><input type="color" name="color" value="{{ c.color }}"></div>
+        <div style="width:110px"><label>{{ _('Points de départ') }}</label><input type="number" name="starting_balance" value="{{ c.starting_balance }}"></div>
+      </div>
+      <div class="row between mt">
+        <label class="check"><input type="checkbox" name="active" {{ 'checked' if c.active }}> {{ _('actif (décocher pour masquer, l’historique est conservé)') }}</label>
+        <button class="btn-sm">{{ _('Enregistrer') }}</button>
+      </div>
+    </form>
+    {% endfor %}
+    <form method="post" action="/reglages/enfant/ajouter" class="person">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <h3>＋ {{ _('Ajouter un enfant') }}</h3>
+      <div class="row wrap-row">
+        <div class="grow"><label>{{ _('Prénom') }}</label><input type="text" name="name" required maxlength="50"></div>
+        <div style="width:64px"><label>{{ _('Couleur') }}</label><input type="color" name="color" value="{{ colors[children | length % colors | length] }}"></div>
+        <div style="width:110px"><label>{{ _('Points de départ') }}</label><input type="number" name="starting_balance" value="0"></div>
+      </div>
+      <button class="btn-sm btn-ok mt">{{ _('Ajouter') }}</button>
+    </form>
+  </div>
+</details>
+
+<details class="glass" id="habitude">
+  <summary>🌙 {{ _('Routine du soir (points gagnés)') }}</summary>
+  <div class="inner">{{ catalog_editor('habitude', habits, _('Points gagnés'), next='/reglages#habitude') }}</div>
+</details>
+<details class="glass" id="penalite">
+  <summary>⚠️ {{ _('Petites règles (points retirés)') }}</summary>
+  <div class="inner">{{ catalog_editor('penalite', rules, _('Points retirés'), rule=True, next='/reglages#penalite') }}</div>
+</details>
+<details class="glass" id="recompense">
+  <summary>🎁 {{ _('Récompenses (coût)') }}</summary>
+  <div class="inner">{{ catalog_editor('recompense', rewards, _('Coût en points'), next='/reglages#recompense') }}</div>
+</details>
+
+<details class="glass" id="comptes">
+  <summary>🔐 {{ _('Comptes') }}</summary>
+  <div class="inner">
+    {% for u in users %}
+    <div class="person">
+      <form method="post" action="/reglages/compte/{{ u.id }}">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <div class="small dim">{{ _('Parent') if u.is_parent else _('Enfants (code PIN)') }} · {{ _('identifiant') }} <strong>{{ u.username }}</strong></div>
+        <div class="row wrap-row">
+          <div class="grow"><label>{{ _('Nom affiché') }}</label><input type="text" name="display_name" value="{{ u.display_name }}" maxlength="50"></div>
+          <div class="grow"><label>{{ _('Nouveau mot de passe') if u.is_parent else _('Nouveau code PIN') }}</label>
+            <input type="password" name="password" autocomplete="new-password" placeholder="{{ _('inchangé si vide') }}"
+                   {% if not u.is_parent %}inputmode="numeric" pattern="[0-9]*"{% endif %}></div>
+        </div>
+        <button class="btn-sm mt">{{ _('Enregistrer') }}</button>
+      </form>
+      {% if u.is_parent and u.id != user.id %}
+      <form method="post" action="/reglages/compte/{{ u.id }}/supprimer" class="mt">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <button class="btn-sm btn-bad" data-confirm="{{ _('Supprimer le compte « {name} » ?').format(name=u.display_name) }}">🗑 {{ _('Supprimer ce compte') }}</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endfor %}
+    <form method="post" action="/reglages/compte/ajouter" class="person">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <h3>＋ {{ _('Ajouter un parent') }}</h3>
+      <label>{{ _('Prénom affiché') }}</label>
+      <input type="text" name="display_name" maxlength="50">
+      <div class="row wrap-row">
+        <div class="grow"><label>{{ _('Identifiant de connexion') }}</label><input type="text" name="username" autocapitalize="none" required maxlength="30"></div>
+        <div class="grow"><label>{{ _('Mot de passe (8 caractères min.)') }}</label><input type="password" name="password" autocomplete="new-password" required minlength="8"></div>
+      </div>
+      <button class="btn-sm btn-ok mt">{{ _('Ajouter') }}</button>
+    </form>
+  </div>
+</details>
+{% endblock %}

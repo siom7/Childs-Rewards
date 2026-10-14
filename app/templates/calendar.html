@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Calendrier') }} · {% endblock %}
+{% block content %}
+<div class="chips">
+  {% for c in children %}
+    <a class="chip glass {{ 'on' if c.id == child.id }}" style="--kid: {{ c.color }}"
+       href="/calendrier?enfant={{ c.id }}&m={{ weeks[1][0].strftime('%Y-%m') }}">{{ c.name }}</a>
+  {% endfor %}
+</div>
+
+<nav class="daynav glass">
+  <a class="btn btn-sm" href="/calendrier?enfant={{ child.id }}&m={{ prev_m }}">‹</a>
+  <div class="title">{{ title }}</div>
+  {% if next_m %}<a class="btn btn-sm" href="/calendrier?enfant={{ child.id }}&m={{ next_m }}">›</a>
+  {% else %}<span class="btn btn-sm" style="visibility:hidden">›</span>{% endif %}
+</nav>
+
+<section class="glass card" style="--kid: {{ child.color }}">
+  <div class="row between">
+    <div class="small dim">{{ _('Ce mois-ci') }} : <strong class="{{ 'pos' if month_total > 0 else 'neg' if month_total < 0 }}">{{ month_total | signed }}</strong></div>
+    <div class="small dim">{{ _('Solde') }} : <strong>{{ balance }}</strong></div>
+  </div>
+  <div class="cal mt">
+    {% for h in weekday_initials() %}<div class="h">{{ h }}</div>{% endfor %}
+    {% for week in weeks %}{% for d in week %}
+      {% set net = nets.get(d) %}
+      {% set cls = ('out ' if d.month != month else '') ~ ('today ' if d == today else '') ~ ('good' if net and net > 0 else 'bad' if net and net < 0 else '') %}
+      {% if d <= today %}
+        <a class="{{ cls }}" href="/enfant/{{ child.id }}/jour/{{ d.isoformat() }}">
+          <span>{{ d.day }}</span>
+          {% if d in pending %}<span class="dot" title="{{ _('En attente') }}"></span>{% endif %}
+          {% if net is not none %}<span class="net {{ 'pos' if net > 0 else 'neg' if net < 0 }}">{{ net | signed }}</span>{% endif %}
+        </a>
+      {% else %}
+        <span class="cell {{ cls }}" style="opacity:.35"><span>{{ d.day }}</span></span>
+      {% endif %}
+    {% endfor %}{% endfor %}
+  </div>
+  <p class="small dim mt">🟡 {{ _('point jaune = saisies en attente de validation') }}</p>
+</section>
+{% endblock %}

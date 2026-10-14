@@ -1,0 +1,25 @@
+{# Édition d'une liste (habitudes, petites règles, récompenses), utilisée dans la journée et les réglages. #}
+{% macro catalog_editor(kind, items, unit, rule=False, next='') %}
+  <p class="small dim">{{ _("Modifier une valeur ne change pas l'historique déjà saisi. Décocher « actif » masque l'élément.") }}</p>
+  {% for it in items %}
+  <form method="post" action="/reglages/catalogue/{{ kind }}/{{ it.id }}" class="setting-row {{ 'rule' if rule }} {{ 'inactive' if not it.active }}">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="hidden" name="next" value="{{ next }}">
+    <input type="text" name="label" value="{{ it.label }}" required maxlength="120">
+    <input type="number" name="points" value="{{ it.points }}" min="1" max="1000" title="{{ unit }}">
+    {% if rule %}<input class="maxd" type="number" name="max_per_day" value="{{ it.max_per_day or '' }}" min="1" placeholder="{{ _('max/j') }}" title="{{ _('Maximum par jour') }}">{% endif %}
+    <div class="actions">
+      <label class="check"><input type="checkbox" name="active" {{ 'checked' if it.active }}> {{ _('actif') }}</label>
+      <button class="btn-sm" title="{{ _('Enregistrer') }}">💾</button>
+    </div>
+  </form>
+  {% endfor %}
+  <form method="post" action="/reglages/catalogue/{{ kind }}/ajouter" class="setting-row {{ 'rule' if rule }}">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="hidden" name="next" value="{{ next }}">
+    <input type="text" name="label" placeholder="{{ _('Nouveau…') }}" required maxlength="120">
+    <input type="number" name="points" value="1" min="1" max="1000" title="{{ unit }}">
+    {% if rule %}<input class="maxd" type="number" name="max_per_day" min="1" placeholder="{{ _('max/j') }}" title="{{ _('Maximum par jour') }}">{% endif %}
+    <div class="actions"><button class="btn-sm btn-ok">＋ {{ _('Ajouter') }}</button></div>
+  </form>
+{% endmacro %}

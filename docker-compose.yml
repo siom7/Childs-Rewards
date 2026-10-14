@@ -1,0 +1,11 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"   # exposé seulement en local : mettre un reverse proxy HTTPS devant
+    environment:
+      CR_COOKIE_SECURE: "1"     # mettre "0" pour tester en http://localhost
+      CR_TIMEZONE: Europe/Paris
+    volumes:
+      - ./data:/data

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+{% if user.is_parent %}
+  <h1>{{ _('Bonjour {name} 👋').format(name=user.display_name) }}</h1>
+  <p class="dim cap">{{ today | date }}</p>
+  {% if pending_total %}
+    <a href="/validation" class="glass card row between" style="text-decoration:none">
+      <span>⏳ {{ _('{n} saisie(s) à valider').format(n=pending_total) }}</span>
+      <span class="btn btn-sm btn-primary">{{ _('Valider') }}</span>
+    </a>
+  {% endif %}
+{% else %}
+  <h1>{{ _('Qui es-tu ? 😊') }}</h1>
+  <p class="dim">{{ _('Touche ton prénom pour remplir ta journée.') }}</p>
+{% endif %}
+
+<div class="kids">
+  {% for card in cards %}
+  <a class="kid-card glass" href="/enfant/{{ card.child.id }}" style="--kid: {{ card.child.color }}">
+    <div class="row between">
+      <div class="row">
+        <div class="avatar">{{ card.child.name[0] }}</div>
+        <h2 style="margin:0">{{ card.child.name }}</h2>
+      </div>
+      {% if card.pending %}<span class="tag pending">{{ _('{n} en attente').format(n=card.pending) }}</span>{% endif %}
+    </div>
+    <div class="mt">
+      <span class="big {{ 'neg' if card.balance < 0 }}">{{ card.balance }}</span> <span class="pts">{{ _('points') }}</span>
+    </div>
+    <div class="small dim mt">{{ _("Aujourd'hui") }} :
+      <strong class="{{ 'pos' if card.today > 0 else 'neg' if card.today < 0 }}">{{ card.today | signed }}</strong>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

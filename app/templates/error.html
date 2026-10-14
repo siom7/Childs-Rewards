@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Oups') }} · {% endblock %}
+{% block content %}
+<div class="glass card center login">
+  <p class="big">😕</p>
+  <h2>{{ detail }}</h2>
+  <p class="dim small">{{ _('Erreur {n}').format(n=status) }}</p>
+  <a class="btn btn-primary mt" href="/">{{ _("Retour à l'accueil") }}</a>
+</div>
+{% endblock %}

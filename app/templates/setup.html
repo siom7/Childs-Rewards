@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Installation') }} · {% endblock %}
+{% block content %}
+{# Valeurs saisies précédemment (en cas d'erreur), sinon une ligne vide par défaut #}
+{% set p_users = form.getlist('parent_username') if form else ['', ''] %}
+{% set p_names = form.getlist('parent_name') if form else ['', ''] %}
+{% set c_names = form.getlist('child_name') if form else ['', ''] %}
+{% set c_colors = form.getlist('child_color') if form else [] %}
+{% set c_balances = form.getlist('child_balance') if form else [] %}
+
+<h1>👋 {{ _('Bienvenue') }}</h1>
+<p class="dim">{{ _('Configurons votre famille. Cette page disparaît une fois l’installation terminée.') }}</p>
+
+<form method="get" action="/setup" class="glass card">
+  <label for="lang">🌍 {{ _('Langue') }}</label>
+  <select id="lang" name="lang" data-autosubmit>
+    {% for code, label in languages.items() %}
+      <option value="{{ code }}" {{ 'selected' if code == get_language() }}>{{ label }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+<form method="post" action="/setup">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <input type="hidden" name="language" value="{{ get_language() }}">
+
+  <section class="glass card">
+    <h2>🏡 {{ _('La famille') }}</h2>
+    <label>{{ _('Nom de la famille') }}</label>
+    <input type="text" name="family_name" value="{{ form.get('family_name', '') if form }}" placeholder="{{ _('ex. Famille Martin') }}" required maxlength="50">
+  </section>
+
+  <section class="glass card">
+    <h2>👨‍👩 {{ _('Parents') }}</h2>
+    <p class="dim small">{{ _('Chaque parent a son propre compte. Laissez une ligne vide pour l’ignorer.') }}</p>
+    <div id="parents">
+      {% for i in range(p_users | length) %}
+      <div class="person">
+        <label>{{ _('Prénom affiché') }}</label>
+        <input type="text" name="parent_name" value="{{ p_names[i] }}" maxlength="50">
+        <div class="row wrap-row">
+          <div class="grow"><label>{{ _('Identifiant de connexion') }}</label>
+            <input type="text" name="parent_username" value="{{ p_users[i] }}" autocapitalize="none" maxlength="30"></div>
+          <div class="grow"><label>{{ _('Mot de passe (8 caractères min.)') }}</label>
+            <input type="password" name="parent_password" autocomplete="new-password"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <template id="tpl-parent">
+      <div class="person">
+        <label>{{ _('Prénom affiché') }}</label>
+        <input type="text" name="parent_name" maxlength="50">
+        <div class="row wrap-row">
+          <div class="grow"><label>{{ _('Identifiant de connexion') }}</label>
+            <input type="text" name="parent_username" autocapitalize="none" maxlength="30"></div>
+          <div class="grow"><label>{{ _('Mot de passe (8 caractères min.)') }}</label>
+            <input type="password" name="parent_password" autocomplete="new-password"></div>
+        </div>
+      </div>
+    </template>
+    <button type="button" class="btn-sm mt" data-add-row="tpl-parent" data-target="parents">＋ {{ _('Ajouter un parent') }}</button>
+  </section>
+
+  <section class="glass card">
+    <h2>👧👦 {{ _('Enfants') }}</h2>
+    <p class="dim small">{{ _('Les points de départ permettent de reprendre un solde existant (sinon 0).') }}</p>
+    <div id="children">
+      {% for i in range(c_names | length) %}
+      <div class="row wrap-row person">
+        <div class="grow"><label>{{ _('Prénom') }}</label>
+          <input type="text" name="child_name" value="{{ c_names[i] }}" maxlength="50"></div>
+        <div style="width:64px"><label>{{ _('Couleur') }}</label>
+          <input type="color" name="child_color" value="{{ c_colors[i] if c_colors[i] is defined else colors[i % colors | length] }}"></div>
+        <div style="width:96px"><label>{{ _('Points') }}</label>
+          <input type="number" name="child_balance" value="{{ c_balances[i] if c_balances[i] is defined else 0 }}"></div>
+      </div>
+      {% endfor %}
+    </div>
+    <template id="tpl-child">
+      <div class="row wrap-row person">
+        <div class="grow"><label>{{ _('Prénom') }}</label><input type="text" name="child_name" maxlength="50"></div>
+        <div style="width:64px"><label>{{ _('Couleur') }}</label><input type="color" name="child_color" data-palette="{{ colors | join(',') }}"></div>
+        <div style="width:96px"><label>{{ _('Points') }}</label><input type="number" name="child_balance" value="0"></div>
+      </div>
+    </template>
+    <button type="button" class="btn-sm mt" data-add-row="tpl-child" data-target="children">＋ {{ _('Ajouter un enfant') }}</button>
+  </section>
+
+  <section class="glass card">
+    <h2>🔢 {{ _('Compte des enfants') }}</h2>
+    <p class="dim small">{{ _('Un seul compte partagé par les enfants, protégé par un code PIN de 4 à 8 chiffres. Chaque enfant choisit ensuite son prénom.') }}</p>
+    <label>{{ _('Code PIN') }}</label>
+    <input class="pin" type="password" name="kids_pin" inputmode="numeric" pattern="[0-9]*" maxlength="8" required>
+  </section>
+
+  <section class="glass card">
+    <h2>📋 {{ _('Règles de départ') }}</h2>
+    <label class="check" style="font-size:1rem">
+      <input type="checkbox" name="examples" {{ 'checked' if not form or form.get('examples') }}>
+      {{ _('Pré-remplir avec des exemples (8 habitudes, 5 petites règles, 8 récompenses)') }}
+    </label>
+    <p class="dim small">{{ _('Tout reste modifiable ensuite. Décochez pour partir d’une liste vide.') }}</p>
+  </section>
+
+  <button class="btn-primary full">{{ _("Terminer l'installation") }}</button>
+</form>
+{% endblock %}

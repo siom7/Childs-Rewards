@@ -1,0 +1,10 @@
+[Unit]
+Description=Sauvegarde de la base Points Famille
+
+[Service]
+Type=oneshot
+User=childs-rewards
+WorkingDirectory=/opt/childs-rewards
+Environment=CR_DATA_DIR=/var/lib/childs-rewards
+ExecStart=/opt/childs-rewards/.venv/bin/python -m app.cli backup /var/backups/childs-rewards
+ReadWritePaths=/var/backups/childs-rewards

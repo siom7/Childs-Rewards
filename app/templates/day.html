@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% from "_catalog.html" import catalog_editor with context %}
+{% block title %}{{ child.name }} · {% endblock %}
+{% block content %}
+{% set status_label = {'pending': _('En attente'), 'approved': _('Validé'), 'rejected': _('Refusé')} %}
+{% set here = path %}
+<div style="--kid: {{ child.color }}">
+
+  <div class="chips">
+    {% for c in children %}
+      <a class="chip glass {{ 'on' if c.id == child.id }}" style="--kid: {{ c.color }}"
+         href="/enfant/{{ c.id }}/jour/{{ day.isoformat() }}">{{ c.name }}</a>
+    {% endfor %}
+  </div>
+
+  <section class="glass card row between">
+    <div class="row">
+      <div class="avatar">{{ child.name[0] }}</div>
+      <div>
+        <h2 style="margin:0">{{ child.name }}</h2>
+        <div class="small dim">{{ _('Ce jour') }} : <strong class="{{ 'pos' if day_net > 0 else 'neg' if day_net < 0 }}">{{ day_net | signed }}</strong></div>
+      </div>
+    </div>
+    <div class="center">
+      <div class="big {{ 'neg' if balance < 0 }}">{{ balance }}</div>
+      <div class="pts">{{ _('points') }}</div>
+    </div>
+  </section>
+
+  <nav class="daynav glass">
+    <a class="btn btn-sm" href="/enfant/{{ child.id }}/jour/{{ prev_day.isoformat() }}">‹</a>
+    <div class="title">{{ _("Aujourd'hui") if day == today else day | date }}</div>
+    {% if next_day %}<a class="btn btn-sm" href="/enfant/{{ child.id }}/jour/{{ next_day.isoformat() }}">›</a>
+    {% else %}<span class="btn btn-sm" style="visibility:hidden">›</span>{% endif %}
+  </nav>
+
+  {% if not editable %}
+    <div class="flash glass">🔒 {{ _('Cette journée est terminée : seul un parent peut la modifier.') }}</div>
+  {% endif %}
+
+  <!-- Habitudes -->
+  <section class="glass card">
+    <h2>🌙 {{ _('Routine du soir') }}</h2>
+    <div class="habits">
+      {% for h in habits %}
+        {% set e = habit_entries.get(h.id) %}
+        <form method="post" action="/enfant/{{ child.id }}/jour/{{ day.isoformat() }}/habitude/{{ h.id }}">
+          <input type="hidden" name="csrf" value="{{ csrf }}">
+          <button class="habit {{ e.status if e }}" {{ 'disabled' if not editable }}>
+            <span class="box">{% if e and e.status == 'approved' %}✓{% elif e and e.status == 'pending' %}…{% elif e %}✕{% endif %}</span>
+            <span class="lbl">{{ h.label }}
+              {% if e %}<br><span class="st">{{ status_label[e.status] }}</span>{% endif %}</span>
+            <span class="pts">+{{ h.points }}</span>
+          </button>
+        </form>
+      {% else %}
+        <p class="dim">{{ _('Aucune habitude pour l’instant.') }}</p>
+      {% endfor %}
+    </div>
+    {% if not user.is_parent and editable and habits %}
+      <p class="small dim mt">{{ _('Coche ce que tu as fait : un parent validera ensuite ✨') }}</p>
+    {% endif %}
+    {% if user.is_parent %}
+      <details class="edit-list mt">
+        <summary>✏️ {{ _('Modifier la routine') }}</summary>
+        {{ catalog_editor('habitude', all_habits, _('Points gagnés'), next=here) }}
+      </details>
+    {% endif %}
+  </section>
+
+  <!-- Pénalités & bonus (parents) -->
+  {% if user.is_parent %}
+  <section class="glass card">
+    <h2>⚠️ {{ _('Petites règles') }}</h2>
+    <div class="tiles">
+      {% for r in rules %}
+        {% set n = rule_counts.get(r.id, 0) %}
+        <form method="post" action="/enfant/{{ child.id }}/jour/{{ day.isoformat() }}/penalite/{{ r.id }}">
+          <input type="hidden" name="csrf" value="{{ csrf }}">
+          <button class="tile pen" data-confirm="{{ _('Retirer {n} point(s) à {name} pour « {label} » ?').format(n=r.points, name=child.name, label=r.label) }}"
+                  {{ 'disabled' if r.max_per_day and n >= r.max_per_day }}>
+            <span class="v">−{{ r.points }}</span>
+            <span class="lbl">{{ r.label }}</span>
+            {% if n or r.max_per_day %}<span class="cnt">{{ n }}{% if r.max_per_day %} / {{ r.max_per_day }}{% endif %} {{ _("aujourd'hui") }}</span>{% endif %}
+          </button>
+        </form>
+      {% else %}
+        <p class="dim">{{ _('Aucune règle pour l’instant.') }}</p>
+      {% endfor %}
+    </div>
+    <details class="edit-list mt">
+      <summary>✏️ {{ _('Modifier les règles') }}</summary>
+      {{ catalog_editor('penalite', all_rules, _('Points retirés'), rule=True, next=here) }}
+    </details>
+  </section>
+
+  <section class="glass card">
+    <h2>🌟 {{ _('Bonne action') }}</h2>
+    <form method="post" action="/enfant/{{ child.id }}/jour/{{ day.isoformat() }}/bonus" class="row wrap-row">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <input type="number" name="points" min="1" max="100" value="1" style="width:90px" required>
+      <input type="text" name="note" placeholder="{{ _('Pourquoi ? (facultatif)') }}" class="grow" maxlength="200" style="width:auto">
+      <button class="btn-ok">{{ _('Ajouter') }}</button>
+    </form>
+  </section>
+  {% endif %}
+
+  <!-- Récompenses -->
+  <section class="glass card">
+    <h2>🎁 {{ _('Récompenses') }}</h2>
+    {% if not user.is_parent %}<p class="small dim">{{ _('Tu peux dépenser : {n} points').format(n=available) }}</p>{% endif %}
+    <div class="tiles">
+      {% for r in rewards %}
+        {% set enough = user.is_parent or available >= r.points %}
+        <form method="post" action="/enfant/{{ child.id }}/jour/{{ day.isoformat() }}/recompense/{{ r.id }}">
+          <input type="hidden" name="csrf" value="{{ csrf }}">
+          <button class="tile rew" {{ 'disabled' if not enough or not editable }}
+                  data-confirm="{{ (_('Utiliser « {label} » pour {n} points ?') if user.is_parent else _('Demander « {label} » pour {n} points ?')).format(label=r.label, n=r.points) }}">
+            <span class="v">{{ r.points }}</span>
+            <span class="lbl">{{ r.label }}</span>
+            {% if not enough %}<span class="cnt">{{ _('Encore {n} pts').format(n=r.points - available) }}</span>{% endif %}
+          </button>
+        </form>
+      {% else %}
+        <p class="dim">{{ _('Aucune récompense pour l’instant.') }}</p>
+      {% endfor %}
+    </div>
+    {% if user.is_parent %}
+      <details class="edit-list mt">
+        <summary>✏️ {{ _('Modifier les récompenses') }}</summary>
+        {{ catalog_editor('recompense', all_rewards, _('Coût en points'), next=here) }}
+      </details>
+    {% endif %}
+  </section>
+
+  <!-- Journal -->
+  <section class="glass card">
+    <h2>📝 {{ _('Journal du jour') }}</h2>
+    {% if entries %}
+    <ul class="log">
+      {% for e in entries %}
+      <li>
+        <span class="p {{ 'pos' if e.points > 0 else 'neg' }} {{ 'struck' if e.status == 'rejected' }}">{{ e.points | signed }}</span>
+        <span class="grow {{ 'struck' if e.status == 'rejected' }}">{{ e.label }}{% if e.note %} <span class="dim small">— {{ e.note }}</span>{% endif %}</span>
+        {% if e.status != 'approved' %}<span class="tag {{ e.status }}">{{ status_label[e.status] }}</span>{% endif %}
+        {% if user.is_parent and e.status == 'pending' %}
+          <form class="inline" method="post" action="/entree/{{ e.id }}/valider">
+            <input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn-sm btn-ok" title="{{ _('Valider') }}">✓</button>
+          </form>
+        {% endif %}
+        {% if user.is_parent or (e.status == 'pending' and e.created_by_id == user.id) %}
+          <form class="inline" method="post" action="/entree/{{ e.id }}/supprimer">
+            <input type="hidden" name="csrf" value="{{ csrf }}">
+            <button class="btn-link" title="{{ _('Supprimer') }}" data-confirm="{{ _('Supprimer « {label} » ?').format(label=e.label) }}">🗑</button>
+          </form>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+      <p class="dim">{{ _("Rien pour l'instant.") }}</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
