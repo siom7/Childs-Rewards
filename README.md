@@ -96,11 +96,11 @@ The app listens on `127.0.0.1:8000`. If the reverse proxy runs on **another mach
 (e.g. Nginx Proxy Manager in another container):
 
 ```bash
-sudo CR_BIND=0.0.0.0 bash deploy/install.sh
+sudo CR_BIND=0.0.0.0 CR_FORWARDED_ALLOW_IPS=<reverse-proxy-ip> bash deploy/install.sh
 ```
 
-then, in `/etc/systemd/system/childs-rewards.service`, replace `--forwarded-allow-ips 127.0.0.1`
-with the reverse proxy's IP and run `systemctl daemon-reload && systemctl restart childs-rewards`.
+These settings are saved in `/etc/childs-rewards.env` and **kept across updates**: no need to repeat them.
+You can also edit that file and run `sudo systemctl restart childs-rewards`.
 
 ### Option B: Docker
 
@@ -202,12 +202,14 @@ git pull && docker compose up -d --build                          # Docker
 
 ## Advanced configuration
 
-Environment variables (in the systemd service or `docker-compose.yml`):
+Environment variables (in `/etc/childs-rewards.env` for the Debian/LXC install, or in `docker-compose.yml`):
 
 | Variable | Default | Purpose |
 |---|---|---|
 | `CR_DATA_DIR` | `./data` | Folder for the SQLite database and the secret key |
 | `CR_SECRET_KEY` | generated in `data/secret_key` | Signs session cookies |
+| `CR_BIND` / `CR_PORT` | `127.0.0.1` / `8000` | Listening address and port (Debian/LXC install) |
+| `CR_FORWARDED_ALLOW_IPS` | `127.0.0.1` | Reverse proxy IP allowed to pass on the visitor's IP and protocol |
 | `CR_COOKIE_SECURE` | `auto` | `auto` = `Secure` cookie when the page is served over HTTPS (directly or via the reverse proxy); `1` = always (site only works over HTTPS); `0` = never |
 | `CR_TIMEZONE` | `Europe/Paris` | Time zone used for "today" |
 

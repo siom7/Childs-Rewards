@@ -7,13 +7,13 @@ User=childs-rewards
 Group=childs-rewards
 WorkingDirectory=/opt/childs-rewards
 Environment=CR_DATA_DIR=/var/lib/childs-rewards
-# Cookie de session « Secure » automatiquement dès que l'accès se fait en HTTPS (via le reverse proxy)
-Environment=CR_COOKIE_SECURE=auto
-Environment=CR_TIMEZONE=Europe/Paris
-# --proxy-headers : récupère la vraie IP du visiteur (limitation des tentatives de connexion).
-# Si le reverse proxy est sur une autre machine, remplacer 127.0.0.1 par son adresse IP.
-ExecStart=/opt/childs-rewards/.venv/bin/uvicorn app.main:app --host @BIND@ --port @PORT@ \
-          --proxy-headers --forwarded-allow-ips 127.0.0.1
+# Valeurs par défaut, remplacées par /etc/childs-rewards.env (créé par install.sh, conservé lors des mises à jour)
+Environment=CR_BIND=127.0.0.1 CR_PORT=8000 CR_FORWARDED_ALLOW_IPS=127.0.0.1
+Environment=CR_COOKIE_SECURE=auto CR_TIMEZONE=Europe/Paris
+EnvironmentFile=-/etc/childs-rewards.env
+# --proxy-headers : récupère la vraie IP et le protocole (HTTPS) du visiteur depuis le reverse proxy.
+ExecStart=/opt/childs-rewards/.venv/bin/uvicorn app.main:app --host ${CR_BIND} --port ${CR_PORT} \
+          --proxy-headers --forwarded-allow-ips ${CR_FORWARDED_ALLOW_IPS}
 Restart=on-failure
 
 # Durcissement
