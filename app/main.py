@@ -419,6 +419,7 @@ def logout(request: Request):
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    logic.purge_if_due(db)
     t = logic.today()
     cards = [{"child": c, "balance": logic.balance(db, c), "today": logic.day_net(db, c.id, t),
               "pending": logic.pending_count(db, c.id)} for c in logic.children(db)]
@@ -643,6 +644,8 @@ def calendar_page(request: Request, enfant: int | None = None, m: str | None = N
 # --- Réglages (parents) ------------------------------------------------------------------------
 
 CATALOG = {"habitude": Habit, "penalite": Rule, "recompense": Reward}
+# Marqués avec _() pour l'extraction ; traduits à l'affichage par _(label) dans le template.
+RETENTION_LABELS = {6: _("6 mois"), 12: _("1 an"), 24: _("2 ans"), 0: _("Illimité")}
 
 
 @app.get("/reglages", response_class=HTMLResponse)
@@ -650,12 +653,14 @@ def settings_page(request: Request, user: User = Depends(parent_user), db: Sessi
     return render(request, "settings.html", user, db, children=logic.children(db, include_inactive=True),
                   habits=catalog_items(db, Habit), rules=catalog_items(db, Rule),
                   rewards=catalog_items(db, Reward), colors=CHILD_COLORS, languages=i18n.LANGUAGES,
+                  retention=logic.retention_months(db), retention_choices=RETENTION_LABELS,
                   users=db.scalars(select(User).order_by(User.role.desc(), User.id)).all())
 
 
 @app.post("/reglages/famille", dependencies=CSRF)
 def settings_family(request: Request, family_name: str = Form(""), language: str = Form(""),
-                    _user: User = Depends(parent_user), db: Session = Depends(get_db)):
+                    retention: str = Form(""), _user: User = Depends(parent_user),
+                    db: Session = Depends(get_db)):
     name = family_name.strip()[:50]
     if not name:
         flash(request, _("Le nom de la famille ne peut pas être vide."), "error")
@@ -664,6 +669,9 @@ def settings_family(request: Request, family_name: str = Form(""), language: str
     if language in i18n.LANGUAGES:
         logic.set_setting(db, "language", language)
         i18n.set_language(language)
+    if retention.isdigit() and int(retention) in logic.RETENTION_CHOICES:
+        logic.set_setting(db, "retention_months", retention)
+        logic.purge_old_entries(db)  # applique tout de suite une durée raccourcie
     db.commit()
     clear_language_cache()
     flash(request, _("Réglages de la famille enregistrés."))

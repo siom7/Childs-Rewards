@@ -280,3 +280,46 @@ def test_missing_session_cookie_has_clear_message(setup_done):
     with TestClient(app) as c:
         r = c.post("/login", data={"username": "papa", "password": "x", "csrf": "abc"})
         assert r.status_code == 400 and "cookie de session" in r.text
+
+
+def test_retention_cutoff():
+    from datetime import date
+    assert logic.retention_cutoff(12, date(2026, 10, 14)) == date(2025, 10, 14)
+    assert logic.retention_cutoff(6, date(2026, 3, 31)) == date(2025, 9, 30)  # 31 → fin de mois
+    assert logic.retention_cutoff(24, date(2028, 2, 29)) == date(2026, 2, 28)
+    assert logic.retention_cutoff(0) is None
+
+
+def test_purge_keeps_balance(parent, setup_done):
+    lea = setup_done[0]
+    start = balance(lea)
+    old_day = logic.today() - timedelta(days=400)
+    with SessionLocal() as db:
+        kid_user = db.query(User).filter_by(username="enfants").one()
+        common = dict(child_id=lea, day=old_day, created_at=logic.now())
+        db.add_all([
+            Entry(**common, kind="bonus", label="Ancien bonus", points=7, status="approved"),
+            Entry(**common, kind="penalty", label="Ancienne pénalité", points=-2, status="approved"),
+            Entry(**common, kind="habit", label="Jamais validé", points=1, status="pending",
+                  created_by_id=kid_user.id),
+        ])
+        db.commit()
+    assert balance(lea) == start + 5
+    with SessionLocal() as db:
+        deleted = logic.purge_old_entries(db)
+        assert deleted == 3
+        assert db.query(Entry).filter(Entry.day < logic.today() - timedelta(days=366)).count() == 0
+        assert db.query(Entry).filter(Entry.day >= logic.today() - timedelta(days=1)).count() > 0
+    assert balance(lea) == start + 5  # solde inchangé : les points effacés sont archivés
+    # La semaine en cours garde le même total qu'avant
+    with SessionLocal() as db:
+        s = logic.week_summary(db, db.get(Child, lea), logic.week_start(logic.today()))
+        assert s["closing"] == balance(lea)
+
+
+def test_retention_setting(parent):
+    post(parent, "/reglages/famille", {"family_name": "Famille Test", "language": "fr", "retention": "24"})
+    with SessionLocal() as db:
+        assert logic.retention_months(db) == 24
+    assert 'value="24" selected' in parent.get("/reglages").text
+    post(parent, "/reglages/famille", {"family_name": "Famille Test", "language": "fr", "retention": "12"})

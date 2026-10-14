@@ -38,6 +38,8 @@ def upgrade_schema() -> None:
         columns = {c["name"] for c in inspect(conn).get_columns("children")}
         if "active" not in columns:  # v1 -> v2 : enfants masquables
             conn.execute(text("ALTER TABLE children ADD COLUMN active BOOLEAN NOT NULL DEFAULT 1"))
+        if "archived_points" not in columns:  # rétention de l'historique
+            conn.execute(text("ALTER TABLE children ADD COLUMN archived_points INTEGER NOT NULL DEFAULT 0"))
         installed = conn.execute(text("SELECT 1 FROM users LIMIT 1")).first() is not None
         has_language = conn.execute(text("SELECT 1 FROM app_settings WHERE key = 'language'")).first()
         if installed and not has_language:  # v1 installée avant le choix de la langue

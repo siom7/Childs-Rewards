@@ -4,6 +4,7 @@
     python -m app.cli reset-password <identifiant>     # mot de passe d'un parent
     python -m app.cli reset-pin                        # code PIN des enfants
     python -m app.cli backup <dossier>                 # copie de sauvegarde de la base (garde 30 copies)
+    python -m app.cli purge                            # applique la durée de conservation de l'historique
 
 Le nouveau mot de passe / code est demandé de façon masquée (rien n'apparaît dans l'historique du shell).
 Avec Docker : docker compose exec app python -m app.cli reset-password <identifiant>
@@ -19,7 +20,7 @@ from pathlib import Path
 
 from sqlalchemy import select
 
-from . import config
+from . import config, logic
 from .db import SessionLocal, upgrade_schema
 from .main import KIDS_USERNAME, PIN_RE
 from .models import KIDS, PARENT, User
@@ -98,6 +99,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("reset-pin", help="Réinitialiser le code PIN des enfants / reset the children's PIN")
     p = sub.add_parser("backup", help="Sauvegarder la base / back up the database")
     p.add_argument("target_dir")
+    sub.add_parser("purge", help="Effacer l'historique trop ancien / delete history past the retention period")
     args = parser.parse_args(argv)
 
     upgrade_schema()
@@ -107,6 +109,10 @@ def main(argv: list[str] | None = None) -> int:
         return reset_password(args.username)
     if args.command == "backup":
         return backup(args.target_dir)
+    if args.command == "purge":
+        with SessionLocal() as db:
+            print(f"{logic.purge_old_entries(db)} saisie(s) effacée(s) / entries deleted")
+        return 0
     return reset_pin()
 
 

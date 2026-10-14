@@ -38,6 +38,8 @@ chez un service tiers.
 - ✅ **Validation parentale** : ce que cochent les enfants reste « en attente » jusqu'à validation d'un parent.
 - 📋 **Vue semaine** identique à la fiche papier (gagnés / retirés / bonus / récompenses / total, points conservés).
 - 📅 **Calendrier** mensuel par enfant, avec le total de chaque jour.
+- 🗂️ **Historique conservé 1 an** par défaut (6 mois, 2 ans ou illimité au choix) : les journées plus anciennes
+  sont effacées automatiquement, sans toucher au solde (les points sont archivés).
 - ✏️ **Tout est modifiable** par les parents, directement depuis la journée ou dans les réglages ;
   modifier une règle ne change pas l'historique.
 - 🌍 **6 langues** : français, anglais, espagnol, allemand, italien, portugais (choisie à l'installation).
@@ -191,6 +193,8 @@ Après 10 tentatives de connexion ratées, une adresse IP est bloquée 15 minute
 - **Sauvegarde** : toutes les données tiennent dans un fichier (`childs_rewards.db`). L'installation
   Debian/LXC en fait une copie chaque nuit dans `/var/backups/childs-rewards`. Manuellement :
   `python -m app.cli backup <dossier>`. Pensez aussi à sauvegarder le container lui-même (ex. sauvegardes Proxmox).
+- **Durée de conservation** : réglable dans ⚙️ Réglages → Famille (1 an par défaut). Le nettoyage se fait
+  automatiquement une fois par jour ; manuellement : `python -m app.cli purge`.
 - **Restauration** : arrêter le service, remettre le fichier dans `/var/lib/childs-rewards/childs_rewards.db`, redémarrer.
 - **Mise à jour** :
 

@@ -42,6 +42,8 @@ class Child(Base):
     color: Mapped[str] = mapped_column(String(20), default="#a78bfa")
     # Solde de départ (report des fiches papier)
     starting_balance: Mapped[int] = mapped_column(Integer, default=0)
+    # Total des saisies validées effacées par la rétention : le solde ne change pas quand on purge.
+    archived_points: Mapped[int] = mapped_column(Integer, default=0)
     sort: Mapped[int] = mapped_column(Integer, default=0)
     # Un enfant retiré est masqué mais son historique est conservé.
     active: Mapped[bool] = mapped_column(Boolean, default=True)

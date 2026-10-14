@@ -19,6 +19,13 @@
             {% endfor %}
           </select></div>
       </div>
+      <label>🗂️ {{ _("Durée de conservation de l'historique") }}</label>
+      <select name="retention">
+        {% for months, label in retention_choices.items() %}
+          <option value="{{ months }}" {{ 'selected' if months == retention }}>{{ _(label) }}</option>
+        {% endfor %}
+      </select>
+      <p class="small dim">{{ _("Les journées plus anciennes sont effacées automatiquement. Les points restent acquis : le solde ne change pas.") }}</p>
       <button class="btn-sm mt">{{ _('Enregistrer') }}</button>
     </form>
   </div>

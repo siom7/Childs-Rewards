@@ -37,6 +37,8 @@ It is self-hosted (LXC container, VM, Raspberry Pi, NAS with Docker…): no data
 - ✅ **Parental approval**: whatever children tick stays "pending" until a parent approves it.
 - 📋 **Weekly view** matching the paper chart (earned / removed / bonus / rewards / total, points carried over).
 - 📅 **Monthly calendar** per child, with each day's total.
+- 🗂️ **History kept for 1 year** by default (6 months, 2 years or unlimited): older days are deleted
+  automatically without changing the balance (their points are archived).
 - ✏️ **Everything is editable** by parents, right from the day page or in the settings;
   editing a rule does not change past entries.
 - 🌍 **6 languages**: French, English, Spanish, German, Italian, Portuguese (chosen during setup).
@@ -188,6 +190,8 @@ After 10 failed sign-in attempts, an IP address is blocked for 15 minutes.
 - **Backup**: all data lives in one file (`childs_rewards.db`). The Debian/LXC install copies it every night
   to `/var/backups/childs-rewards`. Manually: `python -m app.cli backup <folder>`.
   Also back up the container itself (e.g. Proxmox backups).
+- **History retention**: set in ⚙️ Settings → Family (1 year by default). Cleanup runs automatically once a day;
+  manually: `python -m app.cli purge`.
 - **Restore**: stop the service, put the file back as `/var/lib/childs-rewards/childs_rewards.db`, restart.
 - **Update**:
 

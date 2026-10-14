@@ -3,7 +3,7 @@ import calendar
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from . import config
@@ -51,7 +51,7 @@ def balance(db: Session, child: Child, before: date | None = None) -> int:
         Entry.child_id == child.id, Entry.status == APPROVED)
     if before is not None:
         q = q.where(Entry.day < before)
-    return child.starting_balance + db.scalar(q)
+    return child.starting_balance + child.archived_points + db.scalar(q)
 
 
 def pending_reward_cost(db: Session, child_id: int) -> int:
@@ -119,3 +119,53 @@ def month_activity(db: Session, child_id: int, first: date, last: date) -> tuple
         select(Entry.day).where(Entry.child_id == child_id, Entry.status == PENDING,
                                 Entry.day.between(first, last)).distinct()))
     return nets, pending
+
+
+# --- Rétention de l'historique ---------------------------------------------------------------
+
+RETENTION_CHOICES = (6, 12, 24, 0)  # en mois ; 0 = illimité
+DEFAULT_RETENTION_MONTHS = 12
+
+
+def retention_months(db: Session) -> int:
+    try:
+        months = int(get_setting(db, "retention_months", str(DEFAULT_RETENTION_MONTHS)))
+    except ValueError:
+        return DEFAULT_RETENTION_MONTHS
+    return months if months in RETENTION_CHOICES else DEFAULT_RETENTION_MONTHS
+
+
+def retention_cutoff(months: int, ref: date | None = None) -> date | None:
+    """Premier jour conservé (les saisies antérieures sont effacées), None si illimité."""
+    if not months:
+        return None
+    ref = ref or today()
+    year, month = divmod(ref.year * 12 + ref.month - 1 - months, 12)
+    return date(year, month + 1, min(ref.day, calendar.monthrange(year, month + 1)[1]))
+
+
+def purge_old_entries(db: Session, ref: date | None = None) -> int:
+    """Efface les saisies plus anciennes que la durée de conservation.
+
+    Le total des saisies validées effacées est reporté dans `Child.archived_points` : le solde est inchangé.
+    Retourne le nombre de saisies effacées.
+    """
+    ref = ref or today()
+    set_setting(db, "last_purge", ref.isoformat())
+    cutoff = retention_cutoff(retention_months(db), ref)
+    if cutoff is None:
+        db.commit()
+        return 0
+    totals = db.execute(select(Entry.child_id, func.sum(Entry.points))
+                        .where(Entry.day < cutoff, Entry.status == APPROVED).group_by(Entry.child_id)).all()
+    for child_id, total in totals:
+        db.get(Child, child_id).archived_points += total
+    count = db.execute(delete(Entry).where(Entry.day < cutoff)).rowcount
+    db.commit()
+    return count
+
+
+def purge_if_due(db: Session) -> None:
+    """Nettoyage au plus une fois par jour, déclenché par l'ouverture de l'accueil."""
+    if get_setting(db, "last_purge") != today().isoformat():
+        purge_old_entries(db)
