@@ -148,7 +148,7 @@
             <input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn-sm btn-ok" title="{{ _('Valider') }}">✓</button>
           </form>
         {% endif %}
-        {% if user.is_parent or (e.status == 'pending' and e.created_by_id == user.id) %}
+        {% if user.is_parent or (editable and e.status == 'pending' and e.created_by_id == user.id) %}
           <form class="inline" method="post" action="/entree/{{ e.id }}/supprimer">
             <input type="hidden" name="csrf" value="{{ csrf }}">
             <button class="btn-link" title="{{ _('Supprimer') }}" data-confirm="{{ _('Supprimer « {label} » ?').format(label=e.label) }}">🗑</button>

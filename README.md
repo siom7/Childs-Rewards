@@ -47,7 +47,7 @@ It is self-hosted (LXC container, VM, Raspberry Pi, NAS with Docker…): no data
 
 | Who | Can do |
 |---|---|
-| **Children** (one shared account + PIN code) | Pick their name, tick their habits for today (or yesterday if they forgot), request a reward if they have enough points, see their balance, the week and the calendar. |
+| **Children** (one shared account + PIN code) | Pick their name, tick their habits for today (past days are read-only for them), request a reward if they have enough points, see their balance, the week and the calendar. |
 | **Parents** (one account each) | Everything: approve or reject, tick for a child, remove points, give bonuses, use a reward, fix any day, manage the family, rules and accounts. |
 
 - A child's entry is **pending** (yellow) until approved; a parent's entry is approved straight away.

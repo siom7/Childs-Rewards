@@ -48,7 +48,7 @@ chez un service tiers.
 
 | Qui | Peut faire |
 |---|---|
-| **Enfants** (un compte partagé + code PIN) | Choisir son prénom, cocher ses habitudes du jour (ou de la veille en cas d'oubli), demander une récompense s'il a assez de points, voir son solde, la semaine et le calendrier. |
+| **Enfants** (un compte partagé + code PIN) | Choisir son prénom, cocher ses habitudes du jour (les jours passés sont en lecture seule pour eux), demander une récompense s'il a assez de points, voir son solde, la semaine et le calendrier. |
 | **Parents** (un compte chacun) | Tout : valider ou refuser, cocher pour un enfant, retirer des points, donner des bonus, utiliser une récompense, corriger n'importe quel jour, gérer la famille, les règles et les comptes. |
 
 - Une saisie d'enfant est **en attente** (jaune) jusqu'à validation ; une saisie de parent est validée d'office.

@@ -22,9 +22,8 @@ def week_start(d: date) -> date:
 
 
 def kid_can_edit(d: date) -> bool:
-    """Les enfants peuvent saisir pour aujourd'hui et hier (en cas d'oubli le soir)."""
-    t = today()
-    return t - timedelta(days=1) <= d <= t
+    """Les enfants ne modifient que la journée en cours ; les jours passés sont en lecture seule pour eux."""
+    return d == today()
 
 
 def children(db: Session, include_inactive: bool = False) -> list[Child]:

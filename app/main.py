@@ -508,7 +508,8 @@ def delete_entry(request: Request, entry_id: int, user: User = Depends(current_u
     entry = db.get(Entry, entry_id)
     if entry is None:
         raise HTTPException(404, _("Saisie introuvable."))
-    if not user.is_parent and not (entry.status == PENDING and entry.created_by_id == user.id):
+    if not user.is_parent and not (entry.status == PENDING and entry.created_by_id == user.id
+                                   and logic.kid_can_edit(entry.day)):
         raise HTTPException(403, _("Seul un parent peut supprimer cette saisie."))
     child_id, day = entry.child_id, entry.day
     db.delete(entry)

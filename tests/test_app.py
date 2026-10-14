@@ -140,10 +140,27 @@ def test_kids_cannot_penalize_or_bonus(kids, setup_done):
     assert post(kids, "/reglages/catalogue/penalite/ajouter", {"label": "x", "points": "1"}).status_code == 403
 
 
-def test_kids_cannot_edit_old_days(kids, setup_done):
-    habit = first(Habit)
-    old = logic.today() - timedelta(days=3)
-    assert post(kids, f"/enfant/{setup_done[1]}/jour/{old}/habitude/{habit.id}").status_code == 403
+def test_kids_only_edit_today(kids, parent, setup_done):
+    tom = setup_done[1]
+    habit, reward = first(Habit), first(Reward)
+    yesterday = logic.today() - timedelta(days=1)
+    # Consultation possible, mais en lecture seule
+    page = kids.get(f"/enfant/{tom}/jour/{yesterday}")
+    assert page.status_code == 200 and "seul un parent peut la modifier" in page.text
+    assert post(kids, f"/enfant/{tom}/jour/{yesterday}/habitude/{habit.id}").status_code == 403
+    assert post(kids, f"/enfant/{tom}/jour/{yesterday}/recompense/{reward.id}").status_code == 403
+    # Une demande en attente d'hier ne peut plus être supprimée par l'enfant
+    with SessionLocal() as db:
+        kid_user = db.query(User).filter_by(username="enfants").one()
+        entry = Entry(child_id=tom, day=yesterday, kind="habit", habit_id=habit.id, label=habit.label,
+                      points=1, status="pending", created_by_id=kid_user.id, created_at=logic.now())
+        db.add(entry)
+        db.commit()
+        entry_id = entry.id
+    assert post(kids, f"/entree/{entry_id}/supprimer").status_code == 403
+    # Un parent peut toujours modifier les jours passés
+    assert post(parent, f"/entree/{entry_id}/valider").status_code == 303
+    assert post(parent, f"/enfant/{tom}/jour/{yesterday}/habitude/{habit.id}").status_code == 303
 
 
 def test_penalty_max_per_day(parent, setup_done):
